@@ -7,12 +7,13 @@
 #include "pong_titlescreen.h"
 //#link "pong_titlescreen.s"
 
+
 // link the pattern table into CHR ROM
 //#link "chr_generic.s"
 
 #define COLS 32
 #define ROWS 32
-#define MAX_SCORE 5
+#define MAX_SCORE 1
 #define FP_BITS 4
 
 // setup Famitone library
@@ -120,6 +121,7 @@ void draw_playfield() {
 void declare_winner(byte winner) {
   byte i;
   clrscr();
+  music_play(2);
   for (i=0; i<ROWS/2-5; i++) {
     draw_box(i,i,COLS-i,ROWS-6-i,BOX_CHARS);
     vrambuf_flush();
@@ -223,8 +225,8 @@ void title_screen(void)
     }
   }
 
-  scroll(0,0);//if start is pressed, show the title at whole
-  sfx_play(0,0);
+  scroll(1,0);//if start is pressed, show the title at whole
+  sfx_play(1,0);//titlescreen sound effect
   for(i=0;i<16;++i)//and blink the text faster
   {
     pal_col(2,i&1?0x0f:0x01);
@@ -250,7 +252,7 @@ void main() {
   // set music callback function for NMI
   nmi_set_callback(famitone_update);
   // play music
-  music_play(0);
+  music_play(4);
   // enable PPU rendering (turn on screen)
   title_screen();
 	
