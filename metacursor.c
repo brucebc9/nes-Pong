@@ -13,7 +13,7 @@
 
 #define COLS 32
 #define ROWS 32
-#define MAX_SCORE 1
+#define MAX_SCORE 5
 #define FP_BITS 4
 
 // setup Famitone library
@@ -23,6 +23,7 @@ void __fastcall__ famitone_update(void);
 extern char after_the_rain_music_data[];
 //#link "demosounds.s"
 extern char demo_sounds[];
+
 static byte score1 =0;
 static byte score2 =0;
 static unsigned char bright;
