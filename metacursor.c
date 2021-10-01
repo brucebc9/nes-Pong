@@ -1,15 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
-// include NESLIB header
 #include "neslib.h"
-// include CC65 NES Header (PPU)
 #include <nes.h>
-// VRAM buffer module
 #include "vrambuf.h"
 //#link "vrambuf.c"
-// BCD arithmetic support
-#include "bcd.h"
-//#link "bcd.c"
 #include "pong_titlescreen.h"
 //#link "pong_titlescreen.s"
 
@@ -18,9 +12,16 @@
 
 #define COLS 32
 #define ROWS 32
-#define MAX_SCORE 6
-#define FP_BITS  4
+#define MAX_SCORE 5
+#define FP_BITS 4
 
+// setup Famitone library
+//#link "famitone2.s"
+void __fastcall__ famitone_update(void);
+//#link "music_aftertherain.s"
+extern char after_the_rain_music_data[];
+//#link "demosounds.s"
+extern char demo_sounds[];
 static byte score1 =0;
 static byte score2 =0;
 static unsigned char bright;
@@ -52,6 +53,8 @@ const unsigned char name[]={\
         0,      16,     (code),   pal, \
         0,      24,     (code),   pal, \
         128};
+
+DEF_METASPRITE_1x4(paddle, 0x8f, 0);
 
 // number of metasprites/sprites
 // 2 paddles/ 1 ball
@@ -126,8 +129,8 @@ void declare_winner(byte winner) {
   cputcxy(12+7, 13, '1'+winner);
   vrambuf_flush();
   delay(160);
+  music_stop();
 }
-
 
 void reset_players() {
     actor_x[0] = 14;
@@ -146,8 +149,6 @@ void reset_players() {
     actor_dy[2] = 1;
 }
 
-DEF_METASPRITE_1x4(paddle, 0x8f, 0);
-
 // setup PPU and tables
 void setup_graphics() {
   // clear sprites
@@ -161,7 +162,7 @@ void setup_graphics() {
 
 void pal_fade_to(unsigned to)
 {
- // if(!to) music_stop();
+ if(!to) music_stop();
 
   while(bright!=to)
   {
@@ -217,17 +218,16 @@ void title_screen(void)
     }
     else
     {
-      pal_col(2,(frame_cnt&32)?0x0f:0x01);//blinking press start text
+      pal_col(2,(frame_cnt&32)?0x0f:0x20);//blinking press start text
       ++frame_cnt;
     }
   }
 
   scroll(0,0);//if start is pressed, show the title at whole
-  //sfx_play(SFX_START,0);
-
+  sfx_play(0,0);
   for(i=0;i<16;++i)//and blink the text faster
   {
-    pal_col(2,i&1?0x0f:0x20);
+    pal_col(2,i&1?0x0f:0x01);
     delay(4);
   }
   pal_fade_to(4);
@@ -244,12 +244,21 @@ void main() {
   char i;	// actor index
   char oam_id;	// sprite ID
   char pad;	// controller flags
-
+  
+  famitone_init(after_the_rain_music_data);
+  sfx_init(demo_sounds);
+  // set music callback function for NMI
+  nmi_set_callback(famitone_update);
+  // play music
+  music_play(0);
+  // enable PPU rendering (turn on screen)
   title_screen();
 	
   draw_playfield();
   setup_graphics();
+  
   draw_playfield();
+
    
   // loop forever
   while (1) 
@@ -283,14 +292,19 @@ void main() {
     actor_y[2] += actor_dy[2];
     
    //bounce ball
-    if (iabs(actor_x[i]-actor_x[0])<8 && iabs(actor_y[i]-(actor_y[0]-6)<37)) actor_dx[i]=3;
-    else if (iabs(actor_x[i]-(actor_x[1]-6)<14) && iabs(actor_y[i]-(actor_y[1]-6)<37)) actor_dx[i]=-3;
+    if (iabs(actor_x[i]-actor_x[0])<8 && iabs(actor_y[i]-(actor_y[0]-6)<37)){ 
+      actor_dx[i]=4;
+      sfx_play(3,1);}
+    else if (iabs(actor_x[i]-(actor_x[1]-6)<14) && iabs(actor_y[i]-(actor_y[1]-6)<37)){
+      actor_dx[i]=-4;
+      sfx_play(3,2);}
     if (actor_y[i]<21) actor_dy[i]=2;
     else if (actor_y[i]>212) actor_dy[i]=-2;
     
     //Check if point scored
-    if(actor_x[2]<8 && actor_dx[2]<0)
+    if(actor_x[2]<4 && actor_dx[2]<0)
     {
+      sfx_play(2,0);
       delay(15);
       score2++;
       if(score2>=MAX_SCORE){
@@ -308,6 +322,7 @@ void main() {
     
     else if(actor_x[2]>244 && actor_dx[2]>0)
     {
+      sfx_play(2,0);
       delay(15);
       score1++;
       if(score1>=MAX_SCORE){
