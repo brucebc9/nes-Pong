@@ -31,6 +31,7 @@ static unsigned char frame_cnt;
 static unsigned char wait;
 static int iy,dy;
 static unsigned char i;
+char direction;
 
 /*{pal:"nes",layout:"nes"}*/
 const char PALETTE[32] = { 
@@ -148,7 +149,7 @@ void reset_players() {
   
     actor_x[2] = 128;
     actor_y[2] = 8;
-    actor_dx[2] = 1;
+    actor_dx[2] = direction;
     actor_dy[2] = 1;
 }
 
@@ -247,6 +248,7 @@ void main() {
   char i;	// actor index
   char oam_id;	// sprite ID
   char pad;	// controller flags
+  direction=1;
   
   famitone_init(after_the_rain_music_data);
   sfx_init(demo_sounds);
@@ -317,6 +319,7 @@ void main() {
       }
       ppu_off();
       reset_players();
+      direction=-1;
       vrambuf_flush();
       cputcxy(27,1,score2+'0');
       cputcxy(27,1,score2+'0');
@@ -335,6 +338,7 @@ void main() {
       }
       ppu_off();
       reset_players();
+      direction=1;
       vrambuf_flush();
       cputcxy(13,1,score1+'0');
       cputcxy(13,1,score1+'0');
